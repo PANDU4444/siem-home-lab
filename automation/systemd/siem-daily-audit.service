@@ -1,0 +1,24 @@
+[Unit]
+Description=siem-home-lab daily security audit digest
+Documentation=https://github.com/PANDU4444/siem-home-lab
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# __REPO_PATH__ is substituted by scripts/install_timer.sh at install time,
+# so this file stays free of any one machine's directory layout.
+WorkingDirectory=__REPO_PATH__
+ExecStart=__REPO_PATH__/automation/run_daily_audit.sh
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=600
+
+# The digest only reads alerts and writes reports into the repo.
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

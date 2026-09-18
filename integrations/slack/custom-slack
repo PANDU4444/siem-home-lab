@@ -1,0 +1,27 @@
+#!/bin/sh
+# Wazuh integration wrapper. Wazuh executes this filename; it hands off to
+# python3, preferring the bundled interpreter that ships inside the manager.
+WPYTHON_BIN="framework/python/bin/python3"
+SCRIPT_PATH_NAME="$0"
+DIR_NAME="$(cd "$(dirname "$SCRIPT_PATH_NAME")" && pwd)"
+SCRIPT_NAME="$(basename "$SCRIPT_PATH_NAME")"
+
+case "$DIR_NAME" in
+    */active-response/bin | */wodles*)
+        WAZUH_PATH="$(cd "$DIR_NAME/../.." && pwd)"
+        ;;
+    */integrations)
+        WAZUH_PATH="$(cd "$DIR_NAME/.." && pwd)"
+        ;;
+    *)
+        WAZUH_PATH="/var/ossec"
+        ;;
+esac
+
+if [ -x "${WAZUH_PATH}/${WPYTHON_BIN}" ]; then
+    PYTHON_BIN="${WAZUH_PATH}/${WPYTHON_BIN}"
+else
+    PYTHON_BIN="$(command -v python3)"
+fi
+
+exec "${PYTHON_BIN}" "${DIR_NAME}/${SCRIPT_NAME}.py" "$@"

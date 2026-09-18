@@ -1,0 +1,41 @@
+# Secrets - never commit real credentials
+.env
+*.env
+!.env.example
+sync.env
+
+# Wazuh certificates and keys
+*.pem
+*.key
+client.keys
+config/wazuh_indexer_ssl_certs/
+
+# Generated at deploy time from templates
+.rendered/
+
+# Exported alert data: large, and contains host/IP detail from the lab
+.data/
+*.json.gz
+*.json.sum
+
+# Threat-intel response cache
+.cache/
+
+# Generated reports are examples only; regenerate with the scripts.
+# A couple of samples are committed deliberately via git add -f.
+analysis/reports/*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local literal list for scripts/leakscan.py - never commit
+.leakscan-secrets

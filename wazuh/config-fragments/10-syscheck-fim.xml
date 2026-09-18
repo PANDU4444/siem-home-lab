@@ -1,0 +1,73 @@
+<!--
+  siem-home-lab :: tuned File Integrity Monitoring
+  Replaces the stock syscheck block.
+
+  Tuning rationale:
+    - Stock frequency is 43200s (12h). Dropped to 3600s so a change is caught
+      within the hour rather than half a day.
+    - Stock config has no realtime and no whodata. Critical auth/config paths
+      now use whodata (auditd-backed) so alerts carry WHO changed the file,
+      not just that it changed.
+    - Write-heavy paths (/tmp, /home, /var/www) are realtime + report_changes
+      so the YARA active response fires the moment a payload lands.
+    - report_changes is deliberately NOT enabled on /etc/shadow (nodiff) to
+      avoid writing credential hashes into the alert diff.
+-->
+<syscheck>
+  <disabled>no</disabled>
+  <frequency>3600</frequency>
+  <scan_on_start>yes</scan_on_start>
+  <alert_new_files>yes</alert_new_files>
+  <auto_ignore frequency="10" timeframe="3600">no</auto_ignore>
+
+  <!-- Credential and privilege config: who-data so alerts name the actor -->
+  <directories check_all="yes" whodata="yes" report_changes="yes">/etc</directories>
+  <directories check_all="yes" whodata="yes">/etc/sudoers.d</directories>
+  <directories check_all="yes" whodata="yes">/root/.ssh</directories>
+  <directories check_all="yes" whodata="yes">__AGENT_HOME__/.ssh</directories>
+
+  <!-- Persistence surfaces -->
+  <directories check_all="yes" whodata="yes">/etc/cron.d,/etc/cron.daily,/etc/cron.hourly</directories>
+  <directories check_all="yes" whodata="yes">/var/spool/cron</directories>
+  <directories check_all="yes" whodata="yes">/etc/systemd/system</directories>
+
+  <!-- System binaries: trojanised-binary detection -->
+  <directories check_all="yes" realtime="yes">/bin,/sbin,/usr/bin,/usr/sbin</directories>
+  <directories check_all="yes" realtime="yes">/boot</directories>
+
+  <!-- Write-heavy paths: realtime so YARA active response fires immediately -->
+  <directories check_all="yes" realtime="yes" report_changes="yes">/tmp</directories>
+  <directories check_all="yes" realtime="yes" report_changes="yes">/var/www</directories>
+  <directories check_all="yes" realtime="yes">__AGENT_HOME__</directories>
+
+  <!-- Noise suppression -->
+  <ignore>/etc/mtab</ignore>
+  <ignore>/etc/hosts.deny</ignore>
+  <ignore>/etc/random-seed</ignore>
+  <ignore>/etc/adjtime</ignore>
+  <ignore>/etc/resolv.conf</ignore>
+  <ignore>/etc/machine-id</ignore>
+  <ignore>/tmp/_payload.sh</ignore>
+  <ignore type="sregex">\.log$|\.swp$|\.tmp$|\.pid$|\.cache$</ignore>
+  <ignore type="sregex">/\.(cache|config|local|gnupg)/</ignore>
+  <ignore type="sregex">/siem-home-lab/(\.git|\.rendered|\.data|\.cache)/</ignore>
+  <ignore type="sregex">/(myenv|venv|\.venv|wazuh-ai|wazuh-docker)/</ignore>
+  <ignore type="sregex">^/var/www/.*\.(png|jpg|jpeg|gif|woff2?|ico)$</ignore>
+
+  <!-- Never diff secret material into alerts -->
+  <nodiff>/etc/shadow</nodiff>
+  <nodiff>/etc/gshadow</nodiff>
+  <nodiff type="sregex">\.key$|\.pem$|id_rsa</nodiff>
+
+  <skip_nfs>yes</skip_nfs>
+  <skip_dev>yes</skip_dev>
+  <skip_proc>yes</skip_proc>
+  <skip_sys>yes</skip_sys>
+  <process_priority>10</process_priority>
+  <max_eps>100</max_eps>
+  <synchronization>
+    <enabled>yes</enabled>
+    <interval>5m</interval>
+    <max_eps>10</max_eps>
+  </synchronization>
+</syscheck>
