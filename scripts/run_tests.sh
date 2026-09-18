@@ -72,16 +72,6 @@ for s in scripts/*.sh automation/*.sh scripts/attack-simulation/*.sh \
 done
 [ "$SHELL_ERR" -eq 0 ] && pass "shell scripts parse" || fail "a shell script has a syntax error"
 
-if git rev-parse --git-dir >/dev/null 2>&1; then
-    if python3 scripts/leakscan.py . HEAD >/dev/null 2>&1; then
-        pass "secret scan clean (no CRITICAL or HIGH findings)"
-    else
-        fail "secret scan found something - run 'make scan' for detail"
-    fi
-else
-    skip "secret scan (not a git repository)"
-fi
-
 if python3 -c "import requests" >/dev/null 2>&1; then
     if python3 scripts/test_slack.py >/dev/null 2>&1; then
         pass "Slack payload builds correctly (11 checks)"

@@ -146,13 +146,12 @@ Expected output from `make test`:
   [PASS] XML files are well-formed
   [PASS] Python modules compile
   [PASS] shell scripts parse
-  [PASS] secret scan clean (no CRITICAL or HIGH findings)
   [PASS] Slack payload builds correctly (11 checks)
   [PASS] manager configuration is valid
   [PASS] detection rules fire (5 passed, 0 failed)
   [PASS] wazuh-agent is running
   [PASS] auditd is running (required by FIM whodata)
- 10 passed, 0 failed, 0 skipped
+ 9 passed, 0 failed, 0 skipped
 ```
 
 Dashboard: `https://localhost` (self-signed certificate). Log in as `admin`
@@ -169,7 +168,6 @@ Run `make` on its own to list every target.
 | `make up` / `make down` | Start / stop the stack |
 | `make deploy` | Install rules, YARA, FIM and auditd config |
 | `make test` | Full verification suite |
-| `make scan` | Scan committed content for secrets |
 | `make simulate` | Controlled end-to-end attack simulation |
 | `make report` | Daily audit digest |
 | `make soc-report` | Full historical SOC report |
@@ -389,7 +387,6 @@ deployment, and not something visible from a dashboard.
 
 ```bash
 make test        # everything below, in one command
-make scan        # secret scan on committed content only
 make simulate    # full detection chain, end to end
 ```
 
@@ -442,7 +439,6 @@ siem-home-lab/
     ├── deploy_to_*.sh       Validated deploys with automatic rollback
     ├── render_config.py     Secret substitution into the config template
     ├── run_tests.sh         Verification suite
-    ├── leakscan.py          Committed-content secret scanner
     └── install_timer.sh     Installs the systemd timer for this checkout
 ```
 

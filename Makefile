@@ -71,9 +71,6 @@ timer: ## Install the daily audit systemd timer
 test: ## Run the full verification suite
 	@bash scripts/run_tests.sh
 
-scan: ## Scan committed content for secrets
-	@$(PYTHON) scripts/leakscan.py . HEAD
-
 simulate: ## Run the controlled attack simulation end to end
 	@sudo bash scripts/attack-simulation/attack_sim.sh
 

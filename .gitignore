@@ -36,6 +36,3 @@ venv/
 .idea/
 *.swp
 .DS_Store
-
-# Local literal list for scripts/leakscan.py - never commit
-.leakscan-secrets

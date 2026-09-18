@@ -30,7 +30,7 @@ HOME_RE = re.compile(r"/home/[A-Za-z_][A-Za-z0-9_-]*")
 # RFC 6598 carrier-grade NAT. Python's ipaddress does not report these as
 # private, but Tailscale and similar overlays allocate from here, so treating
 # them as public-and-sensitive is the safe reading.
-CGNAT = ipaddress.ip_network("100.64.0.0/10")  # leakscan:allow
+CGNAT = ipaddress.ip_network("100.64.0.0/10")
 
 
 def is_sensitive_ip(text):
