@@ -10,9 +10,15 @@ FAIL=0
 
 run_case() {
     local desc="$1" expect="$2"; shift 2
-    local tmp="/tmp/logtest_case.log"
+    # A fixed /tmp path breaks the moment the script is run once under sudo:
+    # the root-owned file is then unwritable by a normal user, because
+    # fs.protected_regular blocks writes to another user's file in a sticky
+    # world-writable directory. mktemp avoids the whole class of problem.
+    local tmp
+    tmp="$(mktemp)"
     printf '%s\n' "$@" > "$tmp"
     docker cp "$tmp" "$CTR:/tmp/logtest_case.log" >/dev/null 2>&1
+    rm -f "$tmp"
 
     local out
     out="$(docker exec "$CTR" bash -c '/var/ossec/bin/wazuh-logtest < /tmp/logtest_case.log' 2>&1)"
