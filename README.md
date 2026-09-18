@@ -443,8 +443,6 @@ siem-home-lab/
     ├── render_config.py     Secret substitution into the config template
     ├── run_tests.sh         Verification suite
     ├── leakscan.py          Committed-content secret scanner
-    ├── audit_pdf.sh         OCR audit of a PDF before publishing
-    ├── redact_pdf.py        Destructive redaction of a PDF's screenshots
     └── install_timer.sh     Installs the systemd timer for this checkout
 ```
 
@@ -496,19 +494,16 @@ Things that went wrong during the build, and what they taught:
    images. OCRing them found no credentials, but did surface the lab's public
    cloud addresses in shell prompts and dashboards.
 
-   Redacting it turned out to be the harder lesson. `scripts/redact_pdf.py`
-   destroys pixels rather than drawing boxes over them, because a black
-   rectangle leaves the original image intact underneath. Even then, OCR at
-   300 DPI and at 400 DPI recognised *different* subsets of the same page — so
-   raising the resolution did not converge, it just traded one miss for
-   another. Two passes reported "clean" while the address was plainly legible
-   on screen; only opening the page and looking caught it.
+   Redacting it proved harder than expected. Drawing a black box over an image
+   is not redaction — the original pixels remain in the file. Destroying the
+   pixels worked, but OCR at 300 DPI and at 400 DPI recognised *different*
+   subsets of the same page, so raising the resolution never converged. Two
+   passes reported "clean" while the address was plainly legible on screen;
+   only opening the page and looking caught it.
 
    The conclusion: OCR-based redaction cannot honestly be called a guarantee.
-   The PDF was removed rather than patched, which is also why a clone is now
-   about 180 KB instead of 10 MB. `scripts/audit_pdf.sh` and
-   `scripts/redact_pdf.py` remain, for auditing a write-up *before* publishing
-   one.
+   The PDF was removed rather than patched, which is also why a clone is about
+   208 KB instead of 10 MB.
 
 8. **Deduplication is the whole game.** 93% of this lab's alert volume was
    repetition. Any triage process that reads raw alerts instead of grouped

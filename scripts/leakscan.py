@@ -120,7 +120,7 @@ def scan(repo, ref):
         blob = git(repo, "show", "{}:{}".format(ref, path)).stdout
         if path.lower().endswith((".pdf", ".png", ".jpg", ".jpeg", ".gif", ".zip", ".gz")):
             findings["INFO"].append((path, 0, "binary skipped",
-                                     "use scripts/audit_pdf.sh for PDFs"))
+                                     "binary content is not text-scanned"))
             continue
         try:
             text = blob.decode("utf-8")
