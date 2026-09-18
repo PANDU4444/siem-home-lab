@@ -1,0 +1,172 @@
+<!--
+  siem-home-lab :: custom detection rules
+  Rule ID range 100100-100199 (Wazuh reserves 100000+ for user rules)
+  Every rule carries a <mitre> mapping so the daily audit report can group
+  detections by ATT&CK technique instead of by raw rule ID.
+-->
+
+<group name="siem-home-lab,authentication,">
+
+  <rule id="100101" level="5">
+    <if_sid>5710,5716,5758</if_sid>
+    <description>SSH authentication failure from $(srcip)</description>
+    <mitre><id>T1110.001</id></mitre>
+    <group>authentication_failed,pci_dss_10.2.4,gdpr_IV_35.7.d,</group>
+  </rule>
+
+  <rule id="100102" level="12" frequency="8" timeframe="120">
+    <if_matched_sid>100101</if_matched_sid>
+    <same_source_ip />
+    <description>SSH brute force: 8+ failed logins from $(srcip) within 120s</description>
+    <mitre><id>T1110.001</id></mitre>
+    <group>authentication_failures,attack,pci_dss_11.4,</group>
+  </rule>
+
+  <rule id="100103" level="14">
+    <if_sid>5715</if_sid>
+    <if_matched_sid>100102</if_matched_sid>
+    <same_source_ip />
+    <description>CRITICAL: successful SSH login from $(srcip) after brute force - likely compromise</description>
+    <mitre><id>T1110.001</id><id>T1078</id></mitre>
+    <group>authentication_success,attack,intrusion,</group>
+  </rule>
+
+  <rule id="100104" level="10">
+    <if_sid>5715</if_sid>
+    <user>^root$</user>
+    <description>Direct SSH login as root from $(srcip)</description>
+    <mitre><id>T1078.003</id></mitre>
+    <group>authentication_success,</group>
+  </rule>
+
+</group>
+
+
+<group name="siem-home-lab,accounts,privilege_escalation,">
+
+  <rule id="100110" level="10">
+    <if_sid>5902</if_sid>
+    <description>New user account created on $(agent.name)</description>
+    <mitre><id>T1136.001</id></mitre>
+    <group>account_created,pci_dss_10.2.2,</group>
+  </rule>
+
+  <rule id="100111" level="12">
+    <if_sid>5901,5904</if_sid>
+    <match>sudo|admin|wheel|root</match>
+    <description>Account added to a privileged group - possible persistence</description>
+    <mitre><id>T1098</id></mitre>
+    <group>account_changed,</group>
+  </rule>
+
+  <rule id="100112" level="12">
+    <if_sid>5401,5402</if_sid>
+    <user>^root$</user>
+    <description>Privilege escalation to root via sudo by $(srcuser)</description>
+    <mitre><id>T1548.003</id></mitre>
+    <group>privilege_escalation,pci_dss_10.2.5,</group>
+  </rule>
+
+</group>
+
+
+<group name="siem-home-lab,syscheck,fim,">
+
+  <rule id="100130" level="12">
+    <if_sid>550,554,594</if_sid>
+    <field name="file" type="pcre2">^/etc/(passwd|shadow|gshadow|sudoers|sudoers\.d/)</field>
+    <description>Critical auth file modified: $(file) - credential access or persistence</description>
+    <mitre><id>T1003.008</id><id>T1098</id></mitre>
+    <group>syscheck_critical,pci_dss_11.5,</group>
+  </rule>
+
+  <rule id="100131" level="12">
+    <if_sid>550,554,594</if_sid>
+    <field name="file" type="pcre2">(/etc/cron|/var/spool/cron|/etc/systemd/system/)</field>
+    <description>Scheduled task or unit file changed: $(file) - possible persistence</description>
+    <mitre><id>T1053.003</id><id>T1543.002</id></mitre>
+    <group>syscheck_critical,</group>
+  </rule>
+
+  <rule id="100132" level="12">
+    <if_sid>550,554,594</if_sid>
+    <field name="file" type="pcre2">authorized_keys|\.ssh/</field>
+    <description>SSH key material changed: $(file) - possible backdoor access</description>
+    <mitre><id>T1098.004</id></mitre>
+    <group>syscheck_critical,</group>
+  </rule>
+
+  <rule id="100133" level="10">
+    <if_sid>550,554,594</if_sid>
+    <field name="file" type="pcre2">^/(usr/)?(bin|sbin)/</field>
+    <description>System binary modified: $(file) - possible trojanised binary</description>
+    <mitre><id>T1565.001</id></mitre>
+    <group>syscheck_critical,</group>
+  </rule>
+
+</group>
+
+
+<group name="siem-home-lab,yara,malware,">
+
+  <rule id="100140" level="0">
+    <decoded_as>yara_decoder</decoded_as>
+    <description>YARA scanner messages grouped</description>
+  </rule>
+
+  <rule id="100141" level="12">
+    <if_sid>100140</if_sid>
+    <field name="yara_rule">\.+</field>
+    <description>YARA match: rule $(yara_rule) matched file $(yara_scanned_file)</description>
+    <mitre><id>T1204.002</id><id>T1059</id></mitre>
+    <group>malware,yara_match,</group>
+  </rule>
+
+</group>
+
+
+<group name="siem-home-lab,web,exploitation,">
+
+  <rule id="100150" level="12">
+    <if_sid>31103,31104,31105</if_sid>
+    <description>Web exploitation attempt against $(url) from $(srcip)</description>
+    <mitre><id>T1190</id></mitre>
+    <group>web_attack,attack,</group>
+  </rule>
+
+  <rule id="100151" level="10">
+    <if_sid>31101,31108</if_sid>
+    <description>Path traversal / local file inclusion attempt from $(srcip)</description>
+    <mitre><id>T1083</id><id>T1190</id></mitre>
+    <group>web_attack,</group>
+  </rule>
+
+</group>
+
+
+<group name="siem-home-lab,defense_evasion,discovery,">
+
+  <rule id="100170" level="12">
+    <if_sid>592,591</if_sid>
+    <description>Log file was cleared or rotated unexpectedly - possible anti-forensics</description>
+    <mitre><id>T1070.002</id></mitre>
+    <group>logs_cleared,</group>
+  </rule>
+
+  <rule id="100171" level="12">
+    <if_sid>2902,2903</if_sid>
+    <match>wazuh-agent|auditd|rsyslog|falco</match>
+    <description>Security tooling package removed or modified - possible defense evasion</description>
+    <mitre><id>T1562.001</id></mitre>
+    <group>defense_evasion,</group>
+  </rule>
+
+  <rule id="100180" level="10">
+    <if_sid>5402,5401</if_sid>
+    <match>base64 -d|base64 --decode|echo|python -c|perl -e</match>
+    <description>Encoded or inline interpreter command executed via sudo</description>
+    <mitre><id>T1027</id><id>T1059</id></mitre>
+    <group>defense_evasion,execution,</group>
+  </rule>
+
+</group>

@@ -1,0 +1,15 @@
+<!--
+  siem-home-lab :: custom decoders
+  Parses the output written by yara/active-response/yara.sh into the fields
+  yara_rule / yara_scanned_file that rule 100141 alerts on.
+-->
+
+<decoder name="yara_decoder">
+  <prematch>wazuh-yara:</prematch>
+</decoder>
+
+<decoder name="yara_decoder_fields">
+  <parent>yara_decoder</parent>
+  <regex offset="after_parent">^ (\S+) - Scan result: (\S+) (\S+)</regex>
+  <order>log_type, yara_rule, yara_scanned_file</order>
+</decoder>

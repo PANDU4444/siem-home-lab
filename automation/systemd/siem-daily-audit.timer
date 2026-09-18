@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the siem-home-lab daily audit digest each morning
+Documentation=https://github.com/PANDU4444/siem-home-lab
+
+[Timer]
+# 07:00 local, with jitter so it does not collide with other cron-like jobs.
+OnCalendar=*-*-* 07:00:00
+RandomizedDelaySec=300
+Persistent=true
+Unit=siem-daily-audit.service
+
+[Install]
+WantedBy=timers.target

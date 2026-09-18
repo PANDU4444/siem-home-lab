@@ -1,0 +1,73 @@
+# siem-home-lab :: auditd rules
+#
+# Installed to /etc/audit/rules.d/siem-home-lab.rules
+#
+# Two purposes:
+#   1. Wazuh FIM whodata mode needs auditd running to attribute a file change
+#      to the user and process that made it. Without auditd, whodata="yes"
+#      prevents the agent from starting at all.
+#   2. The -k keys below are decoded by Wazuh's audit decoders, so each rule
+#      here becomes queryable telemetry rather than just local audit log noise.
+#
+# Keys map onto ATT&CK as follows:
+#   identity      -> T1098 / T1136 account manipulation and creation
+#   rootcmd       -> T1548.003 sudo / privilege escalation
+#   privesc       -> T1548.001 setuid execution
+#   network       -> T1071 outbound connections from unexpected processes
+#   susp_activity -> T1059 interpreter execution from writable paths
+
+# Remove any pre-existing rules so this file is authoritative on load.
+-D
+
+# Increase the buffer: FIM whodata on /etc generates bursts during package ops.
+-b 8192
+
+# Wait up to 60s for the audit backlog to drain rather than dropping events.
+--backlog_wait_time 60000
+
+# ---------------------------------------------------------------------------
+# Identity and privilege configuration
+# ---------------------------------------------------------------------------
+-w /etc/passwd     -p wa -k identity
+-w /etc/shadow     -p wa -k identity
+-w /etc/gshadow    -p wa -k identity
+-w /etc/group      -p wa -k identity
+-w /etc/sudoers    -p wa -k identity
+-w /etc/sudoers.d/ -p wa -k identity
+
+# ---------------------------------------------------------------------------
+# Persistence surfaces
+# ---------------------------------------------------------------------------
+-w /etc/cron.d/          -p wa -k persistence
+-w /etc/cron.daily/      -p wa -k persistence
+-w /etc/crontab          -p wa -k persistence
+-w /var/spool/cron/      -p wa -k persistence
+-w /etc/systemd/system/  -p wa -k persistence
+-w /root/.ssh/           -p wa -k persistence
+-w __AGENT_HOME__/.ssh/  -p wa -k persistence
+
+# ---------------------------------------------------------------------------
+# Privilege escalation: commands run as root by a real logged-in user.
+# auid>=1000 excludes daemons; auid!=-1 excludes unattributed kernel context.
+# ---------------------------------------------------------------------------
+-a always,exit -F arch=b64 -S execve -F euid=0 -F auid>=1000 -F auid!=-1 -k rootcmd
+-a always,exit -F arch=b32 -S execve -F euid=0 -F auid>=1000 -F auid!=-1 -k rootcmd
+
+# setuid/setgid binaries being executed
+-a always,exit -F arch=b64 -S setuid -S setgid -S setreuid -S setregid -F auid>=1000 -F auid!=-1 -k privesc
+
+# ---------------------------------------------------------------------------
+# Execution from writable paths - where dropped payloads run from
+# ---------------------------------------------------------------------------
+-a always,exit -F arch=b64 -S execve -F dir=/tmp     -k susp_activity
+-a always,exit -F arch=b64 -S execve -F dir=/dev/shm -k susp_activity
+-a always,exit -F arch=b64 -S execve -F dir=/var/tmp -k susp_activity
+
+# ---------------------------------------------------------------------------
+# Anti-forensics: tampering with the audit trail itself
+# ---------------------------------------------------------------------------
+-w /var/log/auth.log  -p wa -k authlog
+-w /var/log/wtmp      -p wa -k session
+-w /var/log/btmp      -p wa -k session
+-w /sbin/auditctl     -p x  -k audittools
+-w /sbin/auditd       -p x  -k audittools
